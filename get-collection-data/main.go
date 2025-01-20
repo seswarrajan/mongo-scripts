@@ -12,8 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var DB *mongo.Database
-
 func main() {
 	username := flag.String("user", "", "mongodb username")
 	password := flag.String("password", "", "mongodb password")
@@ -22,38 +20,13 @@ func main() {
 
 	flag.Parse()
 
-	connect(*username, *password, *url, *database)
-
-	// Get a list of collections in the database
-	collections, err := DB.ListCollectionNames(context.Background(), mongo.Pipeline{}, nil)
-	if err != nil {
-		fmt.Printf("Failed to list collections: %v", err)
-	}
-
-	// Traverse all collections and get the count
-	for _, collectionName := range collections {
-		collection := DB.Collection(collectionName)
-
-		// Count the documents in the collection
-		count, err := collection.CountDocuments(context.Background(), bson.D{}, nil)
-		if err != nil {
-			log.Printf("Failed to count documents in collection %s: %v", collectionName, err)
-			continue
-		}
-
-		fmt.Printf("Collection: %s, Document Count: %d\n", collectionName, count)
-	}
-
-}
-
-func connect(username string, password string, url string, database string) {
 	credentials := options.Credential{
-		Username: username,
-		Password: password,
+		Username: *username,
+		Password: *password,
 	}
 
-	clientOptions := options.Client().ApplyURI(url)
-	if username != "" && password != "" {
+	clientOptions := options.Client().ApplyURI(*url)
+	if *username != "" && *password != "" {
 		clientOptions.SetAuth(credentials)
 	}
 
@@ -69,5 +42,52 @@ func connect(username string, password string, url string, database string) {
 	}
 
 	log.Info().Msg("Connected Successfully")
-	DB = client.Database(database)
+	db := client.Database(*database)
+
+	// // Get a list of collections in the database
+	// collections, err := DB.ListCollectionNames(context.Background(), mongo.Pipeline{}, nil)
+	// if err != nil {
+	// 	fmt.Printf("Failed to list collections: %v", err)
+	// }
+
+	// // Traverse all collections and get the count
+	// for _, collectionName := range collections {
+	// 	collection := DB.Collection(collectionName)
+
+	// 	// Count the documents in the collection
+	// 	count, err := collection.CountDocuments(context.Background(), bson.D{}, nil)
+	// 	if err != nil {
+	// 		log.Printf("Failed to count documents in collection %s: %v", collectionName, err)
+	// 		continue
+	// 	}
+
+	// 	fmt.Printf("Collection: %s, Document Count: %d\n", collectionName, count)
+	// }
+
+	// List collections
+	collections, err := db.ListCollections(context.Background(), bson.D{})
+	if err != nil {
+		log.Printf("Failed to list collections: %v", err)
+	}
+
+	// Iterate through the collections
+	var collectionNames []string
+	for collections.Next(context.Background()) {
+		var collection bson.M
+		if err := collections.Decode(&collection); err != nil {
+			log.Printf("Failed to decode collection: %v", err)
+		}
+		collectionNames = append(collectionNames, collection["name"].(string))
+	}
+
+	if err := collections.Err(); err != nil {
+		log.Printf("Error iterating collections: %v", err)
+	}
+
+	fmt.Println("Collections:", collectionNames)
+
+	// Disconnect from MongoDB
+	if err := client.Disconnect(context.Background()); err != nil {
+		log.Printf("Failed to disconnect from MongoDB: %v", err)
+	}
 }
