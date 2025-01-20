@@ -71,20 +71,30 @@ func main() {
 	}
 
 	// Iterate through the collections
-	var collectionNames []string
+	// var collectionNames []string
 	for collections.Next(context.Background()) {
 		var collection bson.M
 		if err := collections.Decode(&collection); err != nil {
 			log.Printf("Failed to decode collection: %v", err)
 		}
-		collectionNames = append(collectionNames, collection["name"].(string))
+		collName := collection["name"].(string)
+		// collectionNames = append(collectionNames, collName)
+		coll := db.Collection(collection["name"].(string))
+
+		// Count documents in the collection
+		collCount, err := coll.CountDocuments(context.Background(), bson.D{})
+		if err != nil {
+			fmt.Printf("Failed to count documents in collection %s: %v", collName, err)
+		}
+
+		fmt.Printf("\n[ERS] CollectionName : [%v] and Count : [%v]\n", collName, collCount)
 	}
 
 	if err := collections.Err(); err != nil {
 		log.Printf("Error iterating collections: %v", err)
 	}
 
-	fmt.Println("Collections:", collectionNames)
+	// fmt.Println("Collections:", collectionNames)
 
 	// Disconnect from MongoDB
 	if err := client.Disconnect(context.Background()); err != nil {
