@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -34,7 +35,7 @@ func main() {
 		collection := DB.Collection(collectionName)
 
 		// Count the documents in the collection
-		count, err := collection.CountDocuments(context.Background(), mongo.Pipeline{})
+		count, err := collection.CountDocuments(context.Background(), bson.D{}, nil)
 		if err != nil {
 			log.Printf("Failed to count documents in collection %s: %v", collectionName, err)
 			continue
