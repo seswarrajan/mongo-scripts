@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -24,7 +25,7 @@ func main() {
 	connect(*username, *password, *url, *database)
 
 	// Get a list of collections in the database
-	collections, err := DB.ListCollectionNames(context.Background(), mongo.Pipeline{})
+	collections, err := DB.ListCollectionNames(context.Background(), bson.D{{}}, nil)
 	if err != nil {
 		fmt.Printf("Failed to list collections: %v", err)
 	}
